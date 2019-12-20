@@ -2,11 +2,11 @@ package com.mdrsolutions.SpringJmsExample.service.jms;
 
 import com.mdrsolutions.SpringJmsExample.pojos.BookOrder;
 import com.mdrsolutions.SpringJmsExample.pojos.ProcessedBookOrder;
-import com.sun.org.apache.bcel.internal.generic.LOOKUPSWITCH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -22,11 +22,11 @@ public class WarehouseReceiver {
 
     @JmsListener(destination = "book.order.queue")
     @SendTo("book.order.processed.queue")
-    public ProcessedBookOrder receive(@Payload BookOrder bookOrder,
-                                      @Header(name = "orderState") String orderState,
-                                      @Header(name = "bookOrderId") String bookOrderId,
-                                      @Header(name = "storeId") String storeId,
-                                      MessageHeaders messageHeaders) throws IllegalArgumentException {
+    public Message<ProcessedBookOrder> receive(@Payload BookOrder bookOrder,
+                                               @Header(name = "orderState") String orderState,
+                                               @Header(name = "bookOrderId") String bookOrderId,
+                                               @Header(name = "storeId") String storeId,
+                                               MessageHeaders messageHeaders) throws IllegalArgumentException {
         LOGGER.info("Message received!");
         LOGGER.info("Message is == " + bookOrder);
         LOGGER.info("Message property orderState = {}, bookOrderId = {}," +

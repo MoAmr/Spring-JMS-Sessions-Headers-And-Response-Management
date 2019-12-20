@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +21,7 @@ public class WarehouseProcessingService {
     private JmsTemplate jmsTemplate;
 
     @Transactional
-    public ProcessedBookOrder processOrder(BookOrder bookOrder, String orderState, String storeId) {
+    public Message<ProcessedBookOrder> processOrder(BookOrder bookOrder, String orderState, String storeId) {
 
         if ("NEW".equalsIgnoreCase(orderState)) {
             return add(bookOrder, storeId);
@@ -33,33 +35,43 @@ public class WarehouseProcessingService {
         }
     }
 
-    private ProcessedBookOrder add(BookOrder bookOrder, String storeId) {
+    private Message<ProcessedBookOrder> add(BookOrder bookOrder, String storeId) {
         LOGGER.info("ADDING A NEW ORDER TO THE DB!");
         //TODO - do some type of DB operation
-        return new ProcessedBookOrder(
+        return build(new ProcessedBookOrder(
                 bookOrder,
                 new Date(),
                 new Date()
-        );
+        ), "ADDED", storeId);
     }
 
-    private ProcessedBookOrder update(BookOrder bookOrder, String storeId) {
+    private Message<ProcessedBookOrder> update(BookOrder bookOrder, String storeId) {
         LOGGER.info("UPDATING AN ORDER TO DB");
         //TODO - do some type of DB operation
-        return new ProcessedBookOrder(
+        return build(new ProcessedBookOrder(
                 bookOrder,
                 new Date(),
                 new Date()
-        );
+        ), "updated", storeId);
     }
 
-    private ProcessedBookOrder delete(BookOrder bookOrder, String storeId) {
+    private Message<ProcessedBookOrder> delete(BookOrder bookOrder, String storeId) {
         LOGGER.info("DELETING THE ORDER FROM THE DB");
         //TODO - do some type of DB operation
-        return new ProcessedBookOrder(
+        return build(new ProcessedBookOrder(
                 bookOrder,
                 new Date(),
                 null
-        );
+        ), "DELETED", storeId);
+    }
+
+    private Message<ProcessedBookOrder> build(ProcessedBookOrder bookOrder,
+                                              String orderState,
+                                              String storeId) {
+        return MessageBuilder
+                .withPayload(bookOrder)
+                .setHeader("orderState", orderState)
+                .setHeader("storeId", storeId)
+                .build();
     }
 }
