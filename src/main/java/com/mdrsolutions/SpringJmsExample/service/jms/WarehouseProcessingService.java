@@ -4,8 +4,7 @@ import com.mdrsolutions.SpringJmsExample.pojos.BookOrder;
 import com.mdrsolutions.SpringJmsExample.pojos.ProcessedBookOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.listener.adapter.JmsResponse;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
@@ -17,18 +16,24 @@ import java.util.Date;
 public class WarehouseProcessingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(WarehouseProcessingService.class);
 
-    @Autowired
-    private JmsTemplate jmsTemplate;
+    private static final String PROCESSED_QUEUE = "book.order.processed.queue";
+
+    private static final String CANCELED_QUEUE = "book.order.canceled.queue";
 
     @Transactional
-    public Message<ProcessedBookOrder> processOrder(BookOrder bookOrder, String orderState, String storeId) {
+    public JmsResponse<Message<ProcessedBookOrder>> processOrder(BookOrder bookOrder, String orderState, String storeId) {
+
+        Message<ProcessedBookOrder> message;
 
         if ("NEW".equalsIgnoreCase(orderState)) {
-            return add(bookOrder, storeId);
+            message = add(bookOrder, storeId);
+            return JmsResponse.forQueue(message, PROCESSED_QUEUE);
         } else if ("UPDATE".equalsIgnoreCase(orderState)) {
-            return update(bookOrder, storeId);
+            message = update(bookOrder, storeId);
+            return JmsResponse.forQueue(message, PROCESSED_QUEUE);
         } else if ("DELETE".equalsIgnoreCase(orderState)) {
-            return delete(bookOrder, storeId);
+            message = delete(bookOrder, storeId);
+            return JmsResponse.forQueue(message, CANCELED_QUEUE);
         } else {
             throw new IllegalArgumentException("warehouseProcessingService." +
                     "processOrder(...) - orderState did not match expected values");
